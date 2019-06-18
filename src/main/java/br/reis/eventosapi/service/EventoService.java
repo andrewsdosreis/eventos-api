@@ -66,7 +66,7 @@ public class EventoService {
         Evento evento = findById(id);
         if (evento != null) {
             Date dataHoje = new Date();
-            if (evento.getData() != eventoAtualizado.getData() && eventoAtualizado.getData().before(dataHoje)) {
+            if (!evento.getData().equals(eventoAtualizado.getData()) && eventoAtualizado.getData().before(dataHoje)) {
                 throw new EventoException("A data do Evento não pode ser alterada para uma data menor que hoje");
             }
         } else {
