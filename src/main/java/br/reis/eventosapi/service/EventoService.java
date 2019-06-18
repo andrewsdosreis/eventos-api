@@ -1,5 +1,6 @@
 package br.reis.eventosapi.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,11 +41,11 @@ public class EventoService {
         List<Evento> eventos = eventoRepository.findAll(sort);
         eventos = eventos
                     .stream()
-                    .filter(evento -> filtros.getTitulo() != null ? evento.getTitulo().contains(filtros.getTitulo()) : true)
-                    .filter(evento -> filtros.getDescricao() != null ? evento.getDescricao().contains(filtros.getDescricao()) : true)
-                    .filter(evento -> filtros.getDataInicio() != null ? evento.getData().after(filtros.getDataInicio()) : true)
-                    .filter(evento -> filtros.getDataFim() != null ? evento.getData().before(filtros.getDataFim()) : true)
-                    .filter(evento -> filtros.getOrganizadorNome() != null ? evento.getOrganizador().getNome().contains(filtros.getOrganizadorNome()) : true)
+                    .filter(evento -> filtros.getTitulo() != null ? evento.getTitulo().toLowerCase().contains(filtros.getTitulo().toLowerCase()) : true)
+                    .filter(evento -> filtros.getDescricao() != null ? evento.getDescricao().toLowerCase().contains(filtros.getDescricao().toLowerCase()) : true)
+                    .filter(evento -> filtros.getDataInicio() != null ? evento.getData().compareTo(filtros.getDataInicio()) >= 0 : true)
+                    .filter(evento -> filtros.getDataFim() != null ? evento.getData().compareTo(filtros.getDataFim()) <= 0 : true)
+                    .filter(evento -> filtros.getOrganizadorNome() != null ? evento.getOrganizador().getNome().toLowerCase().contains(filtros.getOrganizadorNome().toLowerCase()) : true)
                     .collect(Collectors.toList());
         return eventos;
     }
@@ -53,17 +54,29 @@ public class EventoService {
         return findById(id);
     }
 
-    public Evento insert(Evento evento) {
+    public Evento insert(Evento evento) throws EventoException {
+        Date dataHoje = new Date();
+        if (evento.getData().before(dataHoje)) {
+            throw new EventoException("A data do Evento não pode ser menor que hoje");
+        }
         return eventoRepository.save(evento);
     }
 
-    public Evento update(Integer id, Evento eventoAtualizado) {
+    public Evento update(Integer id, Evento eventoAtualizado) throws EventoException {
         Evento evento = findById(id);
         if (evento != null) {
-            evento.setTitulo(eventoAtualizado.getTitulo());
-            evento.setDescricao(eventoAtualizado.getDescricao());
-            evento.setData(eventoAtualizado.getData());
+            Date dataHoje = new Date();
+            if (evento.getData() != eventoAtualizado.getData() && eventoAtualizado.getData().before(dataHoje)) {
+                throw new EventoException("A data do Evento não pode ser alterada para uma data menor que hoje");
+            }
+        } else {
+            throw new EventoException("Evento não encontrado no sistema");
         }
+        
+        evento.setTitulo(eventoAtualizado.getTitulo());
+        evento.setDescricao(eventoAtualizado.getDescricao());
+        evento.setData(eventoAtualizado.getData());
+
         return eventoRepository.save(evento);
     }
 
